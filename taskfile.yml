@@ -1,12 +1,22 @@
 version: "3"
 
 tasks:
-  stress:
-    desc: "Executa o load tester contra o serviço"
-    aliases: ["s"]
+  google:
+    desc: "Executa o stress test contra o google"
+    aliases: ["g"]
     cmds:
       - go run ./cmd/app/main.go run -u {{.URL}} -r {{.REQS}} -c {{.CONC}}
     vars:
       URL: "http://google.com"
       REQS: 100
       CONC: 10
+  stress:
+    desc: "Executa o stress test com post"
+    aliases: ["s"]
+    cmds:
+      - go run ./cmd/app/main.go run -u {{.URL}} -r {{.REQS}} -c {{.CONC}} -m POST -d '{{.DATA}}'
+    vars:
+      URL: "https://httpbin.org/post"
+      REQS: 100
+      DATA: '{"msg":"hello world"}'
+      CONC: 10      
