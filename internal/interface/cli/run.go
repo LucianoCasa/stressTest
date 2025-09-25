@@ -2,7 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +15,8 @@ var (
 	url         string
 	requests    int
 	concurrency int
+	method      string
+	payload     string
 )
 
 type Result struct {
@@ -35,6 +39,22 @@ var runCmd = &cobra.Command{
 			return
 		}
 
+		method = strings.ToUpper(method)
+		allowedMethods := map[string]bool{"GET": true, "POST": true, "PATCH": true, "PUT": true, "DELETE": true}
+		if !allowedMethods[method] {
+			fmt.Printf("Erro: método HTTP inválido '%s'. Use GET, POST, PATCH, PUT ou DELETE\n", method)
+			return
+		}
+
+		if (method == "POST" || method == "PATCH" || method == "PUT") && payload == "" {
+			fmt.Printf("Erro: método %s requer um payload (--data)\n", method)
+			return
+		}
+		if (method == "GET" || method == "DELETE") && payload != "" {
+			fmt.Printf("Aviso: método %s não deve ter payload, ignorando --data\n", method)
+			payload = ""
+		}
+
 		start := time.Now()
 		results := make(chan Result, requests)
 		var wg sync.WaitGroup
@@ -48,7 +68,7 @@ var runCmd = &cobra.Command{
 				n++
 			}
 			wg.Add(1)
-			go worker(url, n, results, &wg)
+			go worker(url, method, payload, n, results, &wg)
 		}
 
 		go func() {
@@ -94,11 +114,27 @@ var runCmd = &cobra.Command{
 	},
 }
 
-func worker(url string, requests int, results chan<- Result, wg *sync.WaitGroup) {
+func worker(url string, method, payload string, requests int, results chan<- Result, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for i := 0; i < requests; i++ {
 		start := time.Now()
-		resp, err := http.Get(url)
+
+		var body io.Reader
+		if payload != "" {
+			body = strings.NewReader(payload)
+		}
+
+		req, err := http.NewRequest(method, url, body)
+		if err != nil {
+			results <- Result{StatusCode: 0, Duration: 0, Error: err}
+			continue
+		}
+
+		if payload != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		resp, err := http.DefaultClient.Do(req)
 		duration := time.Since(start)
 
 		if err != nil {
@@ -116,4 +152,6 @@ func init() {
 	runCmd.Flags().StringVarP(&url, "url", "u", "http://localhost:8080", "URL do serviço a ser testado")
 	runCmd.Flags().IntVarP(&requests, "requests", "r", 1000, "Número total de requests")
 	runCmd.Flags().IntVarP(&concurrency, "concurrency", "c", 10, "Número de chamadas simultâneas")
+	runCmd.Flags().StringVarP(&method, "method", "m", "GET", "Método HTTP (GET, POST, PATCH, etc.)")
+	runCmd.Flags().StringVarP(&payload, "data", "d", "", "Payload para métodos que aceitam corpo (JSON)")
 }
