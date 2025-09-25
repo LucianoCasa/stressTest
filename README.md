@@ -1,18 +1,20 @@
 # Teste de Stress
 
-## Como usar
+## Teste com o docker
 
-Buildar e subir os containers:
+Sobe o server para simular um servidor web simples enviando status aleatório e o app fica aguardando o comando manual para iniciar o teste de stress.
 ```cmd
 docker compose up --build -d
-
-# logs
-docker compose logs -f app
-docker compose logs -f server
 ```
 
 Executar o Stress Test:
 ```cmd
-docker run --rm stress-test run -u http://server:8080 -r 1000 -c 10
+docker compose run --rm app run -u http://server:8080 -r 1000 -c 10
 ```
 
+## Teste com site externo
+
+Teste em cima do google.com
+```cmd
+task s
+```

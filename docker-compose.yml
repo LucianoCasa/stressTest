@@ -1,19 +1,18 @@
-version: "3.9"
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      target: app
-    command: ["/app/app"]
+      target: stress
+    container_name: stress-1
+    profiles: ["manual"]
 
   server:
     build:
       context: .
       dockerfile: Dockerfile
       target: server
-    command: ["/app/server"]
+    container_name: server-1
     ports:
       - "8082:8080"
     restart: always

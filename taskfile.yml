@@ -1,12 +1,12 @@
 version: "3"
 
 tasks:
-  test-load:
+  stress:
     desc: "Executa o load tester contra o serviço"
-    aliases: ["l"]
+    aliases: ["s"]
     cmds:
       - go run ./cmd/app/main.go run -u {{.URL}} -r {{.REQS}} -c {{.CONC}}
     vars:
-      URL: "http://localhost:8080"
-      REQS: 1000
+      URL: "http://google.com"
+      REQS: 100
       CONC: 10
